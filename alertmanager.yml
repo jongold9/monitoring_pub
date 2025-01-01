@@ -1,0 +1,16 @@
+global:
+  slack_api_url: 'https://hooks.slack.com/services/TV3J24J3Y/my-slack-api-url/1uBG7MUmIujJk6ywr4PAOY1W'
+
+route:
+  group_by: ['alertname', 'instance']
+  group_wait: 30s
+  group_interval: 3m
+  repeat_interval: 3h
+  receiver: 'slack_receiver'
+
+receivers:
+  - name: 'slack_receiver'
+    slack_configs:
+      - channel: '#alert-channel-name'
+        send_resolved: true
+        text: "{{ range .Alerts }}*{{ .Annotations.summary }}*\n{{ .Annotations.description }}\n\n{{ end }}"
