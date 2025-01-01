@@ -1,0 +1,114 @@
+groups:
+  - name: SystemAlerts
+    rules:
+      # Алерт для высокой загрузки CPU
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[8m])) * 100) > 90
+        for: 8m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU Usage 90% for 8 min"
+          description: |
+            *IP:* {{ $labels.instance }}
+
+      # Алерт для высокой загрузки памяти
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Memory Usage 90% for 5 min"
+          description: |
+            *Server:* {{ $labels.server }}  
+            *IP:* {{ $labels.instance }}
+
+      # Алерт на высокое использование диска
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 70
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Disk Usage 70% for 5 min"
+          description: |
+            *Server:* {{ $labels.server }}  
+            *IP:* {{ $labels.instance }} 
+            *Device:* {{ $labels.device }} 
+
+      # Алерт для недоступного узла (Node Down)
+      - alert: NodeDown
+        expr: up{job="node_exporter"} == 0
+        for: 7m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node Down for 7 min"
+          description: |
+            *Server:* {{ $labels.server }}  
+            *IP:* {{ $labels.instance }}
+
+      # Алерт для среднего значения загрузки (Load Average)
+      - alert: HighLoadAverage
+        expr: node_load5 > 0.8 * count(node_cpu_seconds_total{mode="idle"}) by (instance)
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High Load Average 80% for 5 min"
+          description: |
+            *Server:* {{ $labels.server }}
+            *IP:* {{ $labels.instance }}
+  
+  # Алерты для Баз данных
+  - name: MariaDBAlerts
+    rules:
+      # Алерт для недоступного MariaDB
+      - alert: MariaDBInstanceDown
+        expr: mariadb_up == 0
+        for: 1m  # Оставлено 5 минут
+        labels:
+          severity: critical
+        annotations:
+          summary: "Инстанс MariaDB недоступен"
+          description: |
+            *Server:* {{ $labels.server }}
+            *IP:* {{ $labels.instance }}
+
+      # Алерт для высокого использования соединений
+      - alert: HighConnectionUsage
+        expr: mariadb_global_status_threads_connected / mariadb_global_variables_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование соединений"
+          description: |
+            *Server:* {{ $labels.server }}
+            *IP:* {{ $labels.instance }}
+
+      # Алерт для большого количества медленных запросов
+      - alert: HighSlowQueries
+        expr: rate(mariadb_global_status_slow_queries[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое количество медленных запросов"
+          description: |
+            *Server:* {{ $labels.server }}
+            *IP:* {{ $labels.instance }}
+
+      # Алерт для доступности MariaDB
+      - alert: MariaDBDown
+        expr: mysql_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "MariaDB is down"
+          description: |
+            *Server:* {{ $labels.server }}
+            *IP:* {{ $labels.instance }}
+            *Check if the database is running correctly.*
